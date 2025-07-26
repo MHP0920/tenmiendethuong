@@ -484,7 +484,7 @@ async def submit_game_result(
     # Log the result (you can save to database if needed)
     print(f"Game result: Team {current_user.team_name or current_user.username}, Station {station_info.station_id}, Score: {score}, Completed: {completed}, Verified: {game_verified}")
     
-    # If game is verified successfully, unlock the puzzle
+    # Nếu pass thì unlock puzzle, nếu không vẫn xóa session và coi như lượt chơi kết thúc
     if game_verified:
         # Get the appropriate PIN for this game
         pin = get_game_pin(codename)
@@ -494,10 +494,8 @@ async def submit_game_result(
                 print(f"Puzzle unlocked successfully for team {current_user.username}")
             else:
                 print(f"Failed to unlock puzzle for team {current_user.username}")
-    
-    # Invalidate the session after successful submission
+    # Dù pass hay không đều xóa session
     await invalidate_game_session(session_token)
-    
     return {
         "message": "Kết quả game đã được gửi thành công",
         "score": score,
