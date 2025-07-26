@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truy cập bị từ chối - THỬ THÁCH CHẠY TRẠM: TECH RUN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .error-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .error-title {
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .error-message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .error-code {
+            background: #f8f9fa;
+            color: #6c757d;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 30px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .station-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .station-name {
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+
+        .station-codename {
+            color: #424242;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .copyright {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div class="error-container">
+            {% if error_type == "not_yet" %}
+                <div class="error-icon">🚫</div>
+                <h1 class="error-title">Trạm chưa khả dụng</h1>
+                <p class="error-message">Bạn chưa đủ điều kiện để truy cập trạm này. Vui lòng hoàn thành các trạm trước đó để mở khóa trạm này.</p>
+            {% elif error_type == "conflict" %}
+                <div class="error-icon">⏭️</div>
+                <h1 class="error-title">Trạm đã bỏ qua</h1>
+                <p class="error-message">Đội của bạn đã bỏ qua trạm này và không thể truy cập lại cho đến khi hủy bỏ qua (trả phí).</p>
+            {% else %}
+                <div class="error-icon">❌</div>
+                <h1 class="error-title">Truy cập bị từ chối</h1>
+                <p class="error-message">{{ error_message or "Bạn không có quyền truy cập trạm này." }}</p>
+            {% endif %}
+
+            {% if station_name %}
+            <div class="station-info">
+                <div class="station-name">{{ station_name }}</div>
+            </div>
+            {% endif %}
+
+            <div class="error-code">
+                Lỗi {{ status_code }}: {{ error_detail }}
+            </div>
+
+            <div class="action-buttons">
+                <a href="/games" class="btn btn-primary">Quay lại Games</a>
+                {% if error_type == "conflict" %}
+                <a href="/payment?station_id={{ station_id }}&codename={{ codename }}&type=skip" class="btn btn-secondary">Hủy bỏ qua (tự động thanh toán)</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="copyright">
+        © 2025 THỬ THÁCH CHẠY TRẠM: TECH RUN - Created by Tran Minh Hieu
+    </div>
+
+    <script src="/static/js/ui-components.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script>
+        // Kiểm tra xác thực khi tải trang
+        checkAuth();
+    </script>
+</body>
+</html>

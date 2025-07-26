@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán - THỬ THÁCH CHẠY TRẠM: TECH RUN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .payment-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .game-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .game-info h3 {
+            margin: 0 0 5px 0;
+            color: #1976d2;
+            font-size: 18px;
+        }
+        .game-info p {
+            margin: 0;
+            color: #424242;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .price {
+            font-size: 24px;
+            color: #007bff;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .buttons {
+            margin-top: 30px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .pay-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .pay-btn:hover {
+            background-color: #218838;
+        }
+        .cancel-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        .cancel-btn:hover {
+            background-color: #545b62;
+        }
+        .copyright {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <h2 id="title">Yêu cầu thanh toán</h2>
+        {% if station_name %}
+        <div class="game-info">
+            <h3>{{ station_name }}</h3>
+        </div>
+        {% endif %}
+        <p id="message">Bạn cần thanh toán để truy cập game này.</p>
+        <div class="price" id="priceDisplay">Đang tải...</div>
+        
+        <div class="buttons">
+            <button class="pay-btn" id="payBtn">Thanh toán ngay</button>
+            <button class="cancel-btn" id="cancelBtn">Hủy</button>
+        </div>
+    </div>
+    
+    <div class="copyright">
+        © 2025 THỬ THÁCH CHẠY TRẠM: TECH RUN - Created by Tran Minh Hieu
+    </div>
+
+    <script src="/static/js/ui-components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting payment page...');
+            
+            const API_BASE = window.location.origin;
+            const urlParams = new URLSearchParams(window.location.search);
+            const stationId = urlParams.get('station_id');
+            const codename = urlParams.get('codename');
+            const paymentType = urlParams.get('type'); // 'skip' or 'visit'
+            
+            console.log('URL search params:', window.location.search);
+            console.log('Parsed parameters:', { stationId, codename, paymentType });
+            
+            // Validate required parameters
+            if (!stationId || !codename || !paymentType) {
+                console.error('Missing parameters:', { stationId, codename, paymentType });
+                setTimeout(() => {
+                    showError('Thiếu thông tin cần thiết. Vui lòng quay lại và thử lại.', () => {
+                        window.location.href = '/games';
+                    });
+                }, 100);
+                return;
+            }
+            console.log('Payment page loaded with parameters:', { stationId, codename, paymentType });
+            
+            let currentPrice = 0;
+            
+            // Cập nhật giao diện dựa trên loại thanh toán
+            function updateUIForPaymentType() {
+                console.log('Updating UI for payment type:', paymentType);
+                const titleElement = document.getElementById('title');
+                const messageElement = document.getElementById('message');
+                const buttonElement = document.getElementById('payBtn');
+                
+                if (paymentType === 'skip') {
+                    console.log('Setting UI for skip payment');
+                    titleElement.textContent = 'Hủy bỏ qua game';
+                    messageElement.textContent = 'Hủy bỏ qua sẽ tự động thanh toán phí để bạn có thể chơi game này.';
+                    buttonElement.textContent = 'Hủy bỏ qua';
+                } else {
+                    console.log('Setting UI for visit payment');
+                    titleElement.textContent = 'Thanh toán truy cập';
+                    messageElement.textContent = 'Bạn cần thanh toán để truy cập game này.';
+                    buttonElement.textContent = 'Thanh toán ngay';
+                }
+                
+                console.log('UI updated - title:', titleElement.textContent);
+                console.log('UI updated - message:', messageElement.textContent);
+                console.log('UI updated - button:', buttonElement.textContent);
+            }
+            
+            // Kiểm tra xác thực khi tải trang
+            async function checkAuth() {
+                try {
+                    showLoading('Đang kiểm tra đăng nhập...', 'Xác thực thông tin người dùng');
+                    const response = await fetch(`${API_BASE}/user/profile`, {
+                        credentials: 'include'
+                    });
+                    hideLoading();
+                    
+                    if (!response.ok) {
+                        // User not authenticated, redirect to login
+                        showWarning('Phiên đăng nhập đã hết hạn', () => {
+                            window.location.href = '/login';
+                        });
+                        return false;
+                    }
+                    return true;
+                } catch (error) {
+                    hideLoading();
+                    console.error('Kiểm tra xác thực thất bại:', error);
+                    showError('Không thể kiểm tra xác thực', () => {
+                        window.location.href = '/login';
+                    });
+                    return false;
+                }
+            }
+            
+            async function loadPrice() {
+                console.log('Loading price for payment type:', paymentType);
+                // Kiểm tra xác thực trước - nhưng không hiển thị loading nếu đã hiển thị ở checkAuth
+                const isAuthenticated = await checkAuth();
+                if (!isAuthenticated) return;
+                
+                if (paymentType === 'visit') {
+                    try {
+                        showLoading('Đang tải thông tin giá...', 'Lấy thông tin chi phí truy cập');
+                        const response = await fetch(`${API_BASE}/game-flow/${stationId}/price`, {
+                            credentials: 'include'
+                        });
+                        hideLoading();
+                        
+                        if (response.status === 401) {
+                            showWarning('Phiên đăng nhập đã hết hạn', () => {
+                                window.location.href = '/login';
+                            });
+                            return;
+                        }
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            currentPrice = data.price;
+                            document.getElementById('priceDisplay').textContent = `${data.price} ${data.currency}`;
+                            document.getElementById('title').textContent = 'Thanh toán truy cập Game';
+                            document.getElementById('message').textContent = 'Thanh toán để truy cập trạm game này.';
+                        } else {
+                            throw new Error('Tải giá thất bại');
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        showError('Không thể tải thông tin giá. Vui lòng thử lại.');
+                    }
+                } else if (paymentType === 'skip') {
+                    console.log('Setting skip payment UI elements');
+                    // Đối với skip payment, hiển thị thông tin ngay không cần API
+                    document.getElementById('priceDisplay').textContent = 'Thẻ hồi sinh';
+                    document.getElementById('title').textContent = 'Hủy bỏ qua game';
+                    document.getElementById('message').textContent = 'Hủy bỏ qua sẽ tự động thanh toán phí để bạn có thể chơi game này.';
+                    document.getElementById('payBtn').textContent = 'Hủy bỏ qua';
+                    console.log('Skip payment UI set');
+                }
+            }
+            
+            document.getElementById('payBtn').addEventListener('click', async () => {
+            showConfirm(
+                paymentType === 'skip' ? 
+                'Bạn có chắc chắn muốn hủy bỏ qua game này?' : 
+                'Bạn có chắc chắn muốn thanh toán để truy cập game này?',
+                async () => {
+                    try {
+                        let endpoint;
+                        let loadingTitle, loadingMessage;
+                        
+                        if (paymentType === 'skip') {
+                            endpoint = `${API_BASE}/game-flow/${stationId}/unskip`;
+                            loadingTitle = 'Đang hủy bỏ qua...';
+                            loadingMessage = 'Hủy bỏ qua game (tự động thanh toán)';
+                        } else {
+                            endpoint = `${API_BASE}/game-flow/${stationId}/pay-visit`;
+                            loadingTitle = 'Đang xử lý thanh toán...';
+                            loadingMessage = 'Thanh toán truy cập game';
+                        }
+                        
+                        console.log('Making payment request to:', endpoint);
+                        console.log('Payment type:', paymentType);
+                        
+                        showLoading(loadingTitle, loadingMessage);
+                        
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        console.log('Payment response status:', response.status);
+                        hideLoading();
+                        
+                        if (response.status === 401) {
+                            showWarning('Phiên đăng nhập đã hết hạn', () => {
+                                window.location.href = '/login';
+                            });
+                            return;
+                        }
+                        
+                        if (response.ok) {
+                            // Payment/Unskip successful
+                            console.log('Payment/Unskip successful');
+                            const successMessage = paymentType === 'skip' ? 'Hủy bỏ qua thành công!' : 'Thanh toán thành công!';
+                            showSuccess(successMessage, () => {
+                                if (paymentType === 'skip') {
+                                    // After unskip, check eligibility again
+                                    console.log('Redirecting to game-flow after unskip');
+                                    window.location.href = `/game-flow/${codename}`;
+                                } else {
+                                    // After visit payment, go to game
+                                    response.json().then(data => {
+                                        console.log('Redirecting to game after visit payment');
+                                        window.location.href = `/game/${codename}?session_token=${data.session_token}`;
+                                    });
+                                }
+                            });
+                        } else {
+                            const data = await response.json();
+                            console.error('Payment/Unskip failed:', data);
+                            const errorMessage = paymentType === 'skip' ? 
+                                (data.detail || 'Hủy bỏ qua thất bại. Vui lòng thử lại.') : 
+                                (data.detail || 'Thanh toán thất bại. Vui lòng thử lại.');
+                            showError(errorMessage);
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        console.error('Payment error:', error);
+                        showError('Xử lý thanh toán thất bại. Vui lòng kiểm tra kết nối và thử lại.');
+                    }
+                }
+            );
+            });
+            
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                showConfirm('Bạn có chắc chắn muốn hủy và quay lại danh sách games?', () => {
+                    window.location.href = '/games';
+                });
+            });
+            
+            // Cập nhật UI và load price khi trang tải
+            console.log('Starting payment page initialization...');
+            
+            // First, immediately update UI based on payment type
+            console.log('Calling updateUIForPaymentType()...');
+            updateUIForPaymentType();
+            
+            // Double-check the UI update worked
+            setTimeout(() => {
+                const currentTitle = document.getElementById('title').textContent;
+                const currentMessage = document.getElementById('message').textContent;
+                console.log('After updateUIForPaymentType - Title:', currentTitle);
+                console.log('After updateUIForPaymentType - Message:', currentMessage);
+                
+                // Force update if it didn't work
+                if (paymentType === 'skip' && !currentTitle.includes('bỏ qua')) {
+                    console.log('Forcing skip UI update');
+                    document.getElementById('title').textContent = 'Hủy bỏ qua game';
+                    document.getElementById('message').textContent = 'Hủy bỏ qua sẽ tự động thanh toán phí để bạn có thể chơi game này.';
+                    document.getElementById('priceDisplay').textContent = 'Thẻ hồi sinh';
+                    document.getElementById('payBtn').textContent = 'Hủy bỏ qua';
+                }
+            }, 100);
+            
+            // Then load price data
+            console.log('Calling loadPrice()...');
+            loadPrice().then(() => {
+                console.log('Payment page loaded successfully');
+            }).catch(error => {
+                console.error('Error loading payment page:', error);
+            });
+        }); // End DOMContentLoaded
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đã hoàn thành - THỬ THÁCH CHẠY TRẠM: TECH RUN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        .completion-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .success-icon {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .station-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .auto-logout-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #495057;
+        }
+        .countdown {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="completion-container">
+        <div class="success-icon">✅</div>
+        <h1>Chúc mừng!</h1>
+        <div class="station-name">{{ station_name }}</div>
+        <div class="message">
+            Bạn đã hoàn thành trạm này rồi! <br>
+            Không cần phải làm lại nữa.
+        </div>
+        
+        <div class="auto-logout-info">
+            <p>Hệ thống sẽ tự động đăng xuất sau <span class="countdown" id="countdown">10</span> giây.</p>
+        </div>
+        
+        <div>
+            <a href="/games" class="btn">Quay lại danh sách trạm</a>
+            <button class="btn btn-secondary" onclick="logoutNow()">Đăng xuất ngay</button>
+        </div>
+    </div>
+
+    <script src="/static/js/ui-components.js"></script>
+    <script>
+        let countdown = 10;
+        const countdownElement = document.getElementById('countdown');
+        
+        // Update countdown every second
+        const interval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(interval);
+                logoutAndRedirect();
+            }
+        }, 1000);
+        
+        async function logoutNow() {
+            clearInterval(interval);
+            await logoutAndRedirect();
+        }
+        
+        async function logoutAndRedirect() {
+            try {
+                showLoading('Đang đăng xuất...', 'Kết thúc phiên làm việc');
+                const response = await fetch(`${window.location.origin}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                hideLoading();
+                
+                showSuccess('Đăng xuất thành công!', () => {
+                    window.location.href = '/login';
+                });
+            } catch (error) {
+                hideLoading();
+                // Still redirect to login even if logout fails
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

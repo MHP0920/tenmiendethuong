@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - THỬ THÁCH CHẠY TRẠM: TECH RUN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .copyright {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>THỬ THÁCH CHẠY TRẠM: TECH RUN</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Đăng nhập</button>
+        </form>
+    </div>
+    
+    <div class="copyright">
+        © 2025 THỬ THÁCH CHẠY TRẠM: TECH RUN - Created by Tran Minh Hieu
+    </div>
+
+    <script src="/static/js/ui-components.js"></script>
+    <script>
+        const API_BASE = window.location.origin;
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                showLoading('Đang đăng nhập...', 'Xác thực thông tin đăng nhập');
+                
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    // Login successful - cookie is set automatically
+                    showSuccess('Đăng nhập thành công!', () => {
+                        // Get redirect URL from query params or default to game selection
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectUrl = urlParams.get('redirect') || '/games';
+                        const codename = urlParams.get('codename');
+                        
+                        if (codename) {
+                            window.location.href = `/game-flow/${codename}`;
+                        } else {
+                            window.location.href = redirectUrl;
+                        }
+                    });
+                } else {
+                    showError(data.detail || 'Đăng nhập thất bại');
+                }
+            } catch (error) {
+                hideLoading();
+                showError('Lỗi mạng. Vui lòng thử lại.');
+            }
+        });
+    </script>
+</body>
+</html>
